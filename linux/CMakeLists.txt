@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DRTC_DESKTOP_DEVICE)
 
+find_package(PNG REQUIRED)
+
 add_library(${PLUGIN_NAME} SHARED
   "../third_party/uuidxx/uuidxx.cc"
   "../common/cpp/src/flutter_data_channel.cc"
@@ -32,7 +34,9 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/uuidxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/include"
+  ${PNG_INCLUDE_DIR}
 )
+
 
 apply_standard_settings(${PLUGIN_NAME})
 set_target_properties(${PLUGIN_NAME} PROPERTIES
@@ -42,6 +46,7 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
 "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter)
 target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::GTK)
+target_link_libraries(${PLUGIN_NAME} PRIVATE ${PNG_LIBRARY})
 
 
 target_link_libraries(${PLUGIN_NAME} PRIVATE 
