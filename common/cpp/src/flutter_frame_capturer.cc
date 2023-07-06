@@ -1,8 +1,7 @@
 #include "flutter_frame_capturer.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "lodepng.h"
+#include "svpng.hpp"
 
 namespace flutter_webrtc_plugin {
 
@@ -29,18 +28,18 @@ void FlutterFrameCapturer::CaptureFrame(
   mutex_.lock();
   track_->RemoveRenderer(this);
 
-  int error = SaveFrame();
+  bool success = SaveFrame();
   mutex_.unlock();
 
   std::shared_ptr<MethodResultProxy> result_ptr(result.release());
-  if (error) {
-    result_ptr->Error(std::to_string(error), lodepng_error_text(error));
-  } else {
+  if (success) {
     result_ptr->Success();
+  } else {
+    result_ptr->Error("1", "Cannot save the frame as .png file");
   }
 }
 
-int FlutterFrameCapturer::SaveFrame() {
+bool FlutterFrameCapturer::SaveFrame() {
   if (frame_ == nullptr) {
     return false;
   }
@@ -53,15 +52,14 @@ int FlutterFrameCapturer::SaveFrame() {
   frame_.get()->ConvertToARGB(RTCVideoFrame::Type::kABGR, pixels,
                               /* unused */ -1, width, height);
 
-  std::vector<unsigned char> png;
-
-  unsigned int error = lodepng::encode(png, pixels, width, height);
-  if (error) {
-    return error;
+  FILE* file = fopen(path_.c_str(), "wb");
+  if (!file) {
+    return false;
   }
 
-  error = lodepng::save_file(png, path_);
-  return error;
+  svpng(file, width, height, pixels, 1);
+  fclose(file);
+  return true;
 }
 
 }  // namespace flutter_webrtc_plugin

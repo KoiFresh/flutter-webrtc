@@ -22,13 +22,12 @@ add_library(${PLUGIN_NAME} SHARED
   "../common/cpp/src/flutter_webrtc.cc"
   "../common/cpp/src/flutter_webrtc_base.cc"
   "../third_party/uuidxx/uuidxx.cc"
-  "../third_party/lodepng/lodepng.cc"
 )
 
 include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/uuidxx"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/lodepng"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/svpng"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/include"
 )
 

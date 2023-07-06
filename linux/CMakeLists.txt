@@ -10,7 +10,6 @@ add_definitions(-DRTC_DESKTOP_DEVICE)
 
 add_library(${PLUGIN_NAME} SHARED
   "../third_party/uuidxx/uuidxx.cc"
-  "../third_party/lodepng/lodepng.cc"
   "../common/cpp/src/flutter_data_channel.cc"
   "../common/cpp/src/flutter_frame_cryptor.cc"
   "../common/cpp/src/flutter_media_stream.cc"
@@ -33,7 +32,7 @@ include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../common/cpp/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/uuidxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/libwebrtc/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/lodepng"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/svpng"
 )
 
 

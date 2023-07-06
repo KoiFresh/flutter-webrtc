@@ -28,7 +28,7 @@ class FlutterFrameCapturer
   std::mutex mutex_;
   scoped_refptr<RTCVideoFrame> frame_;
 
-  int SaveFrame();
+  bool SaveFrame();
 };
 
 }  // namespace flutter_webrtc_plugin
