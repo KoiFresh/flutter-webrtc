@@ -1,5 +1,7 @@
 #include "flutter_media_stream.h"
 
+#include "flutter_native_task.h"
+
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_FPS 30
@@ -17,44 +19,52 @@ FlutterMediaStream::FlutterMediaStream(FlutterWebRTCBase* base) : base_(base) {
 void FlutterMediaStream::GetUserMedia(
     const EncodableMap& constraints,
     std::unique_ptr<MethodResultProxy> result) {
-  std::string uuid = base_->GenerateUUID();
-  scoped_refptr<RTCMediaStream> stream =
-      base_->factory_->CreateStream(uuid.c_str());
+  MethodResultProxy* result_raw_ptr = result.release();
 
-  EncodableMap params;
-  params[EncodableValue("streamId")] = EncodableValue(uuid);
+  FlutterNativeTask::Create([this, constraints,
+                             result_raw_ptr](FlutterNativeTask* runner) {
+    std::string uuid = base_->GenerateUUID();
+    scoped_refptr<RTCMediaStream> stream =
+        base_->factory_->CreateStream(uuid.c_str());
 
-  auto it = constraints.find(EncodableValue("audio"));
-  if (it != constraints.end()) {
-    EncodableValue audio = it->second;
-    if (TypeIs<bool>(audio)) {
-      if (true == GetValue<bool>(audio)) {
+    EncodableMap params;
+    params[EncodableValue("streamId")] = EncodableValue(uuid);
+
+    auto it = constraints.find(EncodableValue("audio"));
+    if (it != constraints.end()) {
+      EncodableValue audio = it->second;
+      if (TypeIs<bool>(audio)) {
+        if (true == GetValue<bool>(audio)) {
+          GetUserAudio(constraints, stream, params);
+        }
+      } else if (TypeIs<EncodableMap>(audio)) {
         GetUserAudio(constraints, stream, params);
+      } else {
+        params[EncodableValue("audioTracks")] = EncodableValue(EncodableList());
       }
-    } else if (TypeIs<EncodableMap>(audio)) {
-      GetUserAudio(constraints, stream, params);
     } else {
       params[EncodableValue("audioTracks")] = EncodableValue(EncodableList());
     }
-  } else {
-    params[EncodableValue("audioTracks")] = EncodableValue(EncodableList());
-  }
 
-  it = constraints.find(EncodableValue("video"));
-  params[EncodableValue("videoTracks")] = EncodableValue(EncodableList());
-  if (it != constraints.end()) {
-    EncodableValue video = it->second;
-    if (TypeIs<bool>(video)) {
-      if (true == GetValue<bool>(video)) {
+    it = constraints.find(EncodableValue("video"));
+    params[EncodableValue("videoTracks")] = EncodableValue(EncodableList());
+    if (it != constraints.end()) {
+      EncodableValue video = it->second;
+      if (TypeIs<bool>(video)) {
+        if (true == GetValue<bool>(video)) {
+          GetUserVideo(constraints, stream, params);
+        }
+      } else if (TypeIs<EncodableMap>(video)) {
         GetUserVideo(constraints, stream, params);
       }
-    } else if (TypeIs<EncodableMap>(video)) {
-      GetUserVideo(constraints, stream, params);
     }
-  }
 
-  base_->local_streams_[uuid] = stream;
-  result->Success(EncodableValue(params));
+    base_->local_streams_[uuid] = stream;
+    runner->InvokeMain([result_raw_ptr, params]() {
+      std::unique_ptr<MethodResultProxy> result_ptr(result_raw_ptr);
+      result_ptr->Success(EncodableValue(params));
+    });
+  });
 }
 
 void addDefaultAudioConstraints(
@@ -288,7 +298,6 @@ void FlutterMediaStream::GetUserVideo(const EncodableMap& constraints,
   if (!video_capturer.get())
     return;
 
-  
   video_capturer->StartCapture();
 
   const char* video_source_label = "video_input";
@@ -538,14 +547,14 @@ void FlutterMediaStream::MediaStreamTrackDispose(
       if (track->id().std_string() == track_id) {
         stream->RemoveTrack(track);
 
-      if (base_->video_capturers_.find(track_id) !=
-        base_->video_capturers_.end()) {
-        auto video_capture = base_->video_capturers_[track_id];
-        if (video_capture->CaptureStarted()) {
-          video_capture->StopCapture();
+        if (base_->video_capturers_.find(track_id) !=
+            base_->video_capturers_.end()) {
+          auto video_capture = base_->video_capturers_[track_id];
+          if (video_capture->CaptureStarted()) {
+            video_capture->StopCapture();
+          }
+          base_->video_capturers_.erase(track_id);
         }
-        base_->video_capturers_.erase(track_id);
-       }
       }
     }
   }
